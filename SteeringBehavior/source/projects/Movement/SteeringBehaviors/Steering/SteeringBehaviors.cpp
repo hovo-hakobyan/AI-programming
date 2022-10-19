@@ -21,7 +21,7 @@ SteeringOutput Seek::CalculateSteering(float deltaT, SteeringAgent* pAgent)
 
 	if (pAgent->CanRenderBehavior())
 	{
-		DEBUGRENDERER2D->DrawDirection(pAgent->GetPosition(), steering.LinearVelocity, 5, { 0,1,0 });
+		DEBUGRENDERER2D->DrawDirection(pAgent->GetPosition(), steering.LinearVelocity, 5, { 0,0,1 });
 	}
 
 	return steering;
