@@ -143,14 +143,21 @@ void Flock::Render(float deltaT) const
 				}
 				DEBUGRENDERER2D->DrawCircle(pAgent->GetPosition(), m_NeighborhoodRadius, { 1,1,1 }, 0);
 				RenderBoundingBox(pAgent->GetPosition());
-				m_pCellSpace->RenderNeighborhoodCells(pAgent,m_NeighborhoodRadius);
+				if (m_UsePartitioning)
+				{
+					m_pCellSpace->RenderNeighborhoodCells(pAgent, m_NeighborhoodRadius);
+				}			
 			}
 		}
 		pAgent->Render(deltaT);
 		
 	}
 	m_pAgentToEvade->Render(deltaT);
-	m_pCellSpace->RenderCells();
+	if (m_UsePartitioning)
+	{
+		m_pCellSpace->RenderCells();
+	}
+
 }
 
 void Flock::UpdateAndRenderUI()
