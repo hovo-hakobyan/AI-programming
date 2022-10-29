@@ -80,6 +80,11 @@ private:
 	
 };
 
+//https://carlosupc.github.io/Spatial-Partitioning-Quadtree/
+//https://www.youtube.com/watch?v=OJxEcs0w_kE&t=0s
+//https://en.wikipedia.org/wiki/Quadtree
+//Made using the above tutorials/info
+
 class QuadTree
 {
 public:

@@ -45,7 +45,7 @@ Flock::Flock(
 
 	//SpacePartitioning
 	m_pCellSpace = new CellSpace(m_WorldSize, m_WorldSize, 10, 10, m_FlockSize);
-	m_pQuadTree = new QuadTree(Cell{ 0.f,0.f,m_WorldSize,m_WorldSize }, 2, 0);
+	m_pQuadTree = new QuadTree(Cell{ 0.f,0.f,m_WorldSize,m_WorldSize }, 4, 0);
 
 	Elite::Vector2 randomPosition{};
 	for (int i = 0; i < m_FlockSize; i++)
@@ -169,7 +169,7 @@ void Flock::Render(float deltaT) const
 				
 			}
 		}
-		pAgent->Render(deltaT);
+		//pAgent->Render(deltaT);
 		
 	}
 	m_pAgentToEvade->Render(deltaT);
