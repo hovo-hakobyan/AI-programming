@@ -7,6 +7,7 @@ class SteeringAgent;
 class BlendedSteering;
 class PrioritySteering;
 class CellSpace;
+class QuadTree;
 
 class Flock final
 {
@@ -37,6 +38,7 @@ public:
 private:
 	//Datamembers
 	int m_FlockSize = 0;
+	int m_NrIterations = 0;
 	std::vector<SteeringAgent*> m_Agents;
 	std::vector<SteeringAgent*> m_Neighbors;
 
@@ -44,7 +46,8 @@ private:
 	float m_WorldSize = 0.f;
 	bool m_CanDebugRender = false;
 	bool m_DebugNeighborhood = false;
-	bool m_UsePartitioning = true;
+	bool m_UsePartitioning = false;
+	bool m_UseQuadTree = true;
 
 	float m_NeighborhoodRadius = 1.f;
 	int m_NrOfNeighbors = 0;
@@ -67,6 +70,9 @@ private:
 
 	//SpatialPartitioning
 	CellSpace* m_pCellSpace;
+
+	//QuadTree
+	QuadTree* m_pQuadTree;
 	
 	void RenderBoundingBox(const Elite::Vector2& center) const;
 private:

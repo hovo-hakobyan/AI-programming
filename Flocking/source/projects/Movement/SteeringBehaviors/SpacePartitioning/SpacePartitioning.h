@@ -12,6 +12,7 @@
 #pragma once
 #include <list>
 #include <vector>
+#include <map>
 #include <iterator>
 #include "framework\EliteMath\EVector2.h"
 #include "framework\EliteGeometry\EGeometry2DTypes.h"
@@ -25,10 +26,13 @@ struct Cell
 	Cell(float left, float bottom, float width, float height);
 
 	std::vector<Elite::Vector2> GetRectPoints() const;
+	bool Contains(SteeringAgent* pAgent) const;
 	
 	// all the agents currently in this cell
 	std::list<SteeringAgent*> agents;
 	Elite::Rect boundingBox;
+
+	bool Intersects(Elite::Vector2 leftBottom, float width, float height) const;
 };
 
 // --- Partitioned Space ---
@@ -41,7 +45,7 @@ public:
 	void AddAgent(SteeringAgent* agent);
 	void UpdateAgentCell(SteeringAgent* agent, Elite::Vector2 oldPos);
 
-	void RegisterNeighbors(SteeringAgent* agent, float queryRadius);
+	void RegisterNeighbors(SteeringAgent* agent, float queryRadius, int& nrIterations);
 	const std::vector<SteeringAgent*>& GetNeighbors() const { return m_Neighbors; }
 	int GetNrOfNeighbors() const { return m_NrOfNeighbors; }
 
@@ -73,5 +77,38 @@ private:
 	int PositionToIndex(const Elite::Vector2 pos) const;
 	void InitCells();
 	void GetNeighborhoodCells(const Elite::Vector2& centerPos, const float queryRadius, int& startRowIdx, int& endRowIdx, int& startColIdx, int& endColIdx);
+	
+};
+
+class QuadTree
+{
+public:
+
+
+	QuadTree(Cell boundingCell, int maxEntities, int depth);
+	~QuadTree() = default;
+
+	void AddAgent(SteeringAgent* pAgent);
+	void Query(SteeringAgent* agent, float queryRadius, std::vector<SteeringAgent*>& neighbors, int& nrNeighbors, int& nrIterations);
+
+	void Render() const;
+	void RenderNeighborhoodCells(SteeringAgent* agent, float queryRadius) const;
+
+	void CleanUp();
+private:
+	Cell m_Cell;
+
+	int m_MaxEntities; //amount of entities per section. Used to subdevide
+	int m_DepthLevel;
+
+	bool m_IsDivided; //We want to subdivide this only once
+	bool m_IsLeaf;	//True means this is the final depth level
+
+	std::vector<QuadTree*> m_Sections;
+
+	const static int s_MaxDepth = 10;
+
+	//Methods
+	void SubdivideSpace();
 	
 };

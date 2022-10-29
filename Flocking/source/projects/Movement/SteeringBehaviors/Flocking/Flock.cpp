@@ -45,6 +45,8 @@ Flock::Flock(
 
 	//SpacePartitioning
 	m_pCellSpace = new CellSpace(m_WorldSize, m_WorldSize, 10, 10, m_FlockSize);
+	m_pQuadTree = new QuadTree(Cell{ 0.f,0.f,m_WorldSize,m_WorldSize }, 2, 0);
+
 	Elite::Vector2 randomPosition{};
 	for (int i = 0; i < m_FlockSize; i++)
 	{
@@ -75,6 +77,8 @@ Flock::~Flock()
 	SAFE_DELETE(m_pEvadeBehavior);
 	SAFE_DELETE(m_pAgentToEvade);
 	SAFE_DELETE(m_pCellSpace);
+	m_pQuadTree->CleanUp();
+	SAFE_DELETE(m_pQuadTree);
 
 	for(auto pAgent: m_Agents)
 	{
@@ -85,6 +89,9 @@ Flock::~Flock()
 
 void Flock::Update(float deltaT)
 {
+	m_NrIterations = 0;
+	m_pQuadTree->CleanUp();
+
 	for (SteeringAgent* pAgent : m_Agents)
 	{
 		if (pAgent == nullptr)
@@ -96,9 +103,15 @@ void Flock::Update(float deltaT)
 		if (m_UsePartitioning)
 		{
 			m_pCellSpace->UpdateAgentCell(pAgent, pAgent->GetPreviousPosition());
-			m_pCellSpace->RegisterNeighbors(pAgent, m_NeighborhoodRadius);
+			m_pCellSpace->RegisterNeighbors(pAgent, m_NeighborhoodRadius, m_NrIterations);
 			m_Neighbors = m_pCellSpace->GetNeighbors();
 			m_NrOfNeighbors = m_pCellSpace->GetNrOfNeighbors();
+		}
+		else if (m_UseQuadTree)
+		{
+			m_NrOfNeighbors = 0;
+			m_pQuadTree->AddAgent(pAgent);
+			m_pQuadTree->Query(pAgent, m_NeighborhoodRadius, m_Neighbors, m_NrOfNeighbors,m_NrIterations);
 		}
 		else
 		{
@@ -114,6 +127,7 @@ void Flock::Update(float deltaT)
 		}
 
 	}
+	
 	if (m_TrimWorld)
 	{
 		m_pAgentToEvade->TrimToWorld(m_WorldSize);
@@ -124,6 +138,7 @@ void Flock::Update(float deltaT)
 	evadeTarget.Position = m_pAgentToEvade->GetPosition();
 	m_pEvadeBehavior->SetTarget(evadeTarget);
 	m_pAgentToEvade->Update(deltaT);
+	
 }
 
 void Flock::Render(float deltaT) const
@@ -146,7 +161,12 @@ void Flock::Render(float deltaT) const
 				if (m_UsePartitioning)
 				{
 					m_pCellSpace->RenderNeighborhoodCells(pAgent, m_NeighborhoodRadius);
-				}			
+				}
+				else if (m_UseQuadTree)
+				{
+					m_pQuadTree->RenderNeighborhoodCells(pAgent, m_NeighborhoodRadius);
+				}
+				
 			}
 		}
 		pAgent->Render(deltaT);
@@ -156,6 +176,10 @@ void Flock::Render(float deltaT) const
 	if (m_UsePartitioning)
 	{
 		m_pCellSpace->RenderCells();
+	}
+	else if (m_UseQuadTree)
+	{
+		m_pQuadTree->Render();
 	}
 
 }
@@ -189,6 +213,7 @@ void Flock::UpdateAndRenderUI()
 	ImGui::Indent();
 	ImGui::Text("%.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
 	ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
+	ImGui::Text("%i Iterations", m_NrIterations);
 	ImGui::Unindent();
 
 	ImGui::Spacing();
@@ -201,6 +226,7 @@ void Flock::UpdateAndRenderUI()
 	ImGui::Checkbox("Debug Render steering", &m_CanDebugRender);
 	ImGui::Checkbox("Debug Render neighborhood", &m_DebugNeighborhood);
 	ImGui::Checkbox("Space Partitioning", &m_UsePartitioning);
+	ImGui::Checkbox("QuadTree" ,&m_UseQuadTree);
 
 	ImGui::Spacing();
 	ImGui::Spacing();
@@ -228,6 +254,7 @@ void Flock::RegisterNeighbors(SteeringAgent* pAgent)
 	Vector2 targetPos(pAgent->GetPosition());
 	for ( SteeringAgent* pCurrentAgent : m_Agents)
 	{
+		++m_NrIterations;
 		if (pAgent == pCurrentAgent || pCurrentAgent == nullptr)
 		{
 			continue;
@@ -238,6 +265,7 @@ void Flock::RegisterNeighbors(SteeringAgent* pAgent)
 			m_Neighbors[m_NrOfNeighbors] = pCurrentAgent;
 			++m_NrOfNeighbors;
 		}
+		
 	}
 }
 
