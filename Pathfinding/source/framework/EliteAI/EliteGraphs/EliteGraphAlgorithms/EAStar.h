@@ -49,20 +49,21 @@ namespace Elite
 	template <class T_NodeType, class T_ConnectionType>
 	std::vector<T_NodeType*> AStar<T_NodeType, T_ConnectionType>::FindPath(T_NodeType* pStartNode, T_NodeType* pGoalNode)
 	{
-		std::vector<T_NodeType> finalPath;
+		std::vector<T_NodeType*> finalPath;
 		std::vector<NodeRecord> openList;
 		std::vector<NodeRecord> closedList;
 
-		NodeRecord currentRecord{};
+		NodeRecord currentRecord = *pStartNode;
 		currentRecord.pConnection = nullptr;
-		currentRecord.pNode = pStartNode;
-
+		currentRecord.estimatedTotalCost = GetHeuristicCost(pStartNode, pGoalNode);
 		openList.push_back(currentRecord);
+
 
 		while (!openList.empty())
 		{
+			currentRecord = *std::min_element(openList.begin(), openList.end());
 
-			if (pCurrentNode == pDestinationNode)
+			if (currentRecord == *pGoalNode)
 				break;
 
 
@@ -75,22 +76,55 @@ namespace Elite
 
 				if (std::find(closedList.begin(), closedList.end(), nextNode) != closedList.end())
 				{
-					if (std::find(closedList.begin(), closedList.end(), nextNode)->estimatedTotalCost < nextNode.estimatedTotalCost)
+					if (currentRecord->costSoFar < nextNode.costSoFar)
 					{
-
+						continue;
+					}
+					else
+					{
+						closedList.erase(std::remove(closedList.begin(), closedList.end(), currentRecord));
+					}
+				}
+				else if (std::find(openList.begin(),openList.end(),nextNode) != openList.end())
+				{
+					if (currentRecord->costSoFar < nextNode.costSoFar)
+					{
+						continue;
+					}
+					else
+					{
+						openList.erase(std::remove(openList.begin(), openList.end(), currentRecord));
 					}
 				}
 
 				openList.push_back(nextNode);
 						
 			}
-			closedList.push_back(currentRecord);
 			currentRecord = *std::min_element(openList.begin(), openList.end());
+			closedList.push_back(currentRecord);
+			openList.erase(std::remove(openList.begin(), openList.end(), currentRecord));
 			
 
 		}
 
-		return std::vector<T_NodeType*>();
+		while (currentRecord != *pStartNode)
+		{
+			finalPath.push_back(&currentRecord);
+
+			for (auto& node : closedList)
+			{
+				if (currentRecord.pNode->GetIndex() == node.pConnection->GetFrom())
+				{
+					currentRecord = node;
+					break;
+				}
+			}
+			
+		}
+		finalPath.push_back(pStartNode);
+		std::reverse(finalPath.begin(), finalPath.end());
+
+		return finalPath;
 	}
 
 	template <class T_NodeType, class T_ConnectionType>
