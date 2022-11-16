@@ -1,4 +1,5 @@
 #pragma once
+#include "framework/EliteAI/EliteNavigation/ENavigation.h"
 
 namespace Elite
 {
@@ -53,8 +54,10 @@ namespace Elite
 		std::vector<NodeRecord> openList;
 		std::vector<NodeRecord> closedList;
 
-		NodeRecord currentRecord = *pStartNode;
+		NodeRecord currentRecord;
+		currentRecord.pNode = pStartNode;
 		currentRecord.pConnection = nullptr;
+		currentRecord.costSoFar = 0.f;
 		currentRecord.estimatedTotalCost = GetHeuristicCost(pStartNode, pGoalNode);
 		openList.push_back(currentRecord);
 
@@ -62,69 +65,94 @@ namespace Elite
 		while (!openList.empty())
 		{
 			currentRecord = *std::min_element(openList.begin(), openList.end());
-
-			if (currentRecord == *pGoalNode)
+			
+			if (currentRecord.pNode == pGoalNode)
 				break;
-
 
 			for (auto& connection : m_pGraph->GetNodeConnections(currentRecord.pNode))
 			{
-				NodeRecord nextNode = m_pGraph->GetNode(connection->GetTo());
-				nextNode.pConnection = connection;
-				nextNode.costSoFar = currentRecord.costSoFar + connection->getCost();
+				NodeRecord nextNode;
+				nextNode.pNode = m_pGraph->GetNode(connection->GetTo());
+				nextNode.costSoFar = currentRecord.costSoFar + connection->GetCost();
 				nextNode.estimatedTotalCost = nextNode.costSoFar + GetHeuristicCost(nextNode.pNode, pGoalNode);
+				nextNode.pConnection = connection;
+				
+				NodeRecord existingNode{};
+				
+				bool checkFailed = true;
+				bool shouldCompare = false;
 
-				if (std::find(closedList.begin(), closedList.end(), nextNode) != closedList.end())
+				for (auto& node : closedList)
 				{
-					if (currentRecord->costSoFar < nextNode.costSoFar)
+					if (nextNode.pNode == node.pNode)
+					{
+						checkFailed = false;
+						existingNode = node;
+						shouldCompare = true;
+						break;
+					}
+				}
+
+				if (checkFailed)
+				{
+					for (auto& node : openList) 
+					{
+						if (nextNode.pNode == node.pNode)
+						{
+							existingNode = node;
+							shouldCompare = true;
+							break;
+						}
+					}
+				}
+
+				if (shouldCompare)
+				{
+					if (existingNode.costSoFar <= nextNode.costSoFar)
 					{
 						continue;
 					}
 					else
 					{
-						closedList.erase(std::remove(closedList.begin(), closedList.end(), currentRecord));
-					}
-				}
-				else if (std::find(openList.begin(),openList.end(),nextNode) != openList.end())
-				{
-					if (currentRecord->costSoFar < nextNode.costSoFar)
-					{
-						continue;
-					}
-					else
-					{
-						openList.erase(std::remove(openList.begin(), openList.end(), currentRecord));
-					}
-				}
+						if (checkFailed)
+						{
+							openList.erase(std::remove(openList.begin(), openList.end(), existingNode));
+						}
+						else
+						{
+							closedList.erase(std::remove(closedList.begin(), closedList.end(), existingNode));
+						}
 
-				openList.push_back(nextNode);
-						
+					}
+				}
+				openList.push_back(nextNode);		
 			}
-			currentRecord = *std::min_element(openList.begin(), openList.end());
+
 			closedList.push_back(currentRecord);
 			openList.erase(std::remove(openList.begin(), openList.end(), currentRecord));
 			
 
 		}
 
-		while (currentRecord != *pStartNode)
+		while (currentRecord.pNode != pStartNode)
 		{
-			finalPath.push_back(&currentRecord);
+			finalPath.push_back(currentRecord.pNode);
 
 			for (auto& node : closedList)
 			{
-				if (currentRecord.pNode->GetIndex() == node.pConnection->GetFrom())
+				if (node.pNode == m_pGraph->GetNode( currentRecord.pConnection->GetFrom()))
 				{
 					currentRecord = node;
 					break;
 				}
-			}
-			
+			}			
 		}
+
 		finalPath.push_back(pStartNode);
 		std::reverse(finalPath.begin(), finalPath.end());
 
 		return finalPath;
+
 	}
 
 	template <class T_NodeType, class T_ConnectionType>
