@@ -10,12 +10,9 @@ using namespace Elite;
 //SELECTOR
 BehaviorState BehaviorSelector::Execute(Blackboard* pBlackBoard)
 {
-	//TODO: Fill in this code
 	// Loop over all children in m_ChildBehaviors
 	for (auto& child : m_ChildBehaviors)
 	{
-
-
 		//Execute every child
 
 		m_CurrentState = child->Execute(pBlackBoard);
@@ -48,18 +45,29 @@ BehaviorState BehaviorSelector::Execute(Blackboard* pBlackBoard)
 //SEQUENCE
 BehaviorState BehaviorSequence::Execute(Blackboard* pBlackBoard)
 {
-	//TODO: FIll in this code
 	//Loop over all children in m_ChildBehaviors
-
+	for (auto& child : m_ChildBehaviors)
+	{
 		//Every Child: Execute and store the result in m_CurrentState
+		m_CurrentState = child->Execute(pBlackBoard);
 
 		//Check the currentstate and apply the sequence Logic:
+		switch (m_CurrentState)
+		{
+		case Elite::BehaviorState::Failure:			
+		case Elite::BehaviorState::Running:
+			return m_CurrentState;
+		case Elite::BehaviorState::Success:
+			continue;
+		}
 		//if a child returns Failed:
 			//stop looping over all children and return Failed
 		//if a child returns Running:
 			//Running: stop looping and return Running
 
 		//The selector succeeds if all children succeeded.
+	}
+		
 
 	//All children succeeded 
 	m_CurrentState = BehaviorState::Success;

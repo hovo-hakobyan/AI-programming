@@ -75,8 +75,6 @@ void App_AgarioGame_BT::Start()
 		//3. Set the BehaviorTree active on the agent 
 		newAgent->SetDecisionMaking(pBehaviorTree);
 		
-		
-		
 		m_pAgentVec.push_back(newAgent);
 	}
 
@@ -95,7 +93,18 @@ void App_AgarioGame_BT::Start()
 	//kijk wat uw root ding is in uw schema, slide 15
 	BehaviorTree* pBehaviorTree = new BehaviorTree(pBlacboard, new BehaviorSelector(
 		{
-			//volgorde belangrijk
+			//evade bigger agents
+			new BehaviorSequence({
+				new BehaviorConditional(BT_Conditions::IsBiggerAgentNearby),
+				new BehaviorAction(BT_Actions::ChangeToFlee)
+				}),
+			
+			//chase smaller agents
+			new BehaviorSequence({
+				new BehaviorConditional(BT_Conditions::IsSmallerAgentNearby),
+				new BehaviorAction(BT_Actions::ChangeToChase)
+				}),
+
 			//try to seek food
 			new BehaviorSequence({
 				new BehaviorConditional(BT_Conditions::IsFoodNearby),
@@ -163,6 +172,7 @@ Blackboard* App_AgarioGame_BT::CreateBlackboard(AgarioAgent* a)
 	pBlackboard->AddData("WorldSize", m_TrimWorldSize);
 	pBlackboard->AddData("Target", Elite::Vector2{});
 	pBlackboard->AddData("AgentFleeTarget", static_cast<AgarioAgent*>(nullptr)); // Needs the cast for the type
+	pBlackboard->AddData("AgentChaseTarget", static_cast<AgarioAgent*>(nullptr));
 	pBlackboard->AddData("Time", 0.0f); 
 
 	return pBlackboard;
